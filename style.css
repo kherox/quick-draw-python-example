@@ -1,0 +1,18 @@
+body{
+    background-color:#111118;
+    min-height: 100vh;
+}
+nav {
+ position: fixed;
+ left: 30px;
+ bottom: 30px;
+ z-index: 1;
+}
+
+nav a {
+    width: 40px;
+    height: 40px;
+    display: inline-block;
+    margin: 0 10px 0 0;
+    border-radius: 20px;
+}

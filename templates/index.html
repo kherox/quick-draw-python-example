@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <style>
+    body {
+      background-color: #b1b1b6;
+      min-height: 100vh;
+    }
+
+    nav {
+      position: fixed;
+      left: 30px;
+      bottom: 30px;
+      z-index: 1;
+    }
+
+    nav a {
+      width: 40px;
+      height: 40px;
+      display: inline-block;
+      margin: 0 10px 0 0;
+      border-radius: 20px;
+    }
+  </style>
+  <title>Quick</title>
+</head>
+
+<body>
+  <canvas height="300px" width="300px" style="background-color:black"></canvas>
+  <img>
+  <nav>
+    <a href="#" style="background-color:#ff4141;"></a>
+    <a href="#" style="background-color:#fef336;"></a>
+    <a href="#" style="background-color:#2727e6;"></a>
+    <a href="#" style="background-color:#111118;"></a>
+  </nav>
+
+  <script type="text/javascript">
+    const canvas = document.querySelector("canvas");
+
+    let top1, bottom1;
+
+    image = []
+
+    const context = canvas.getContext("2d");
+
+    context.strokeStyle = "#fff";
+    context.lineWidth = 10;
+    context.lineCap = "round";
+
+    let shouldPaint = false
+
+    canvas.addEventListener("mouseup", (e) => {
+      if (shouldPaint) {
+        predict()
+
+      }
+      shouldPaint = false;
+
+    })
+
+    canvas.addEventListener("mousedown", (e) => {
+      if (!shouldPaint) {
+
+        top1 = e.pageX
+      }
+      shouldPaint = true;
+      console.log("mousedown", "X : ", e.pageX, "Y : ", e.pageY)
+      context.moveTo(e.pageX, e.pageY);
+      context.beginPath()
+    })
+
+
+
+    canvas.addEventListener("mousemove", (e) => {
+
+      if (shouldPaint) {
+        context.lineTo(e.pageX, e.pageY);
+        context.stroke()
+      }
+
+    })
+
+
+    canvas.addEventListener("mouseleave", function (e) {
+      shouldPaint = false;
+
+    })
+
+
+    canvas.addEventListener("dblclick", function (e) {
+      //if (shouldPaint){
+      //	context.moveTo(e.pageX , e.pageY);
+      //console.log("Top" , top1 , "Biottom" , bottom1)
+      //predict()
+
+
+      //}
+
+    })
+
+
+    document.querySelectorAll("nav a").forEach(link => {
+
+      link.addEventListener("click", function (e) {
+        context.strokeStyle = this.style.backgroundColor
+      })
+
+    })
+
+    function predict() {
+
+      var img = document.createElement("img");
+      img.src = canvas.toDataURL("image/png");
+      document.body.append(img);
+
+
+      // document.querySelector("img"). = context.getImageData(140,140,140,140).data
+      let imagedata = context.getImageData(0, 0, canvas.width, canvas.height).data;
+
+      let red = [];
+      let green = [];
+      let blue = [];
+      let alpha = [];
+
+
+      for (var i = 0, n = imagedata.length; i < n; i += 4) {
+        red.push(imagedata[i]);
+        green.push(imagedata[i + 1]);
+        blue.push(imagedata[i + 2]);
+        alpha.push(imagedata[i + 3]);
+
+      }
+
+      console.log(red, green, blue, alpha)
+
+
+
+
+
+
+      var myHeaders = new Headers({
+        "Content-Type": 'multipart/form-data'
+      }); //{content_type : 'image/jpeg'} //multipart/form-data
+
+      var formData = new FormData()
+      formData.append("image", imagedata);
+      formData.append("base64", canvas.toDataURL("image/png"));
+      formData.append("height", canvas.height);
+      formData.append("width", canvas.width);
+
+      var myInit = {
+        method: 'POST',
+        mode: 'cors',
+        cache: 'default',
+        body: formData
+      };
+      fetch("/decode_image", myInit).then(res => {
+        console.log(res)
+      }).catch(err => {
+        console.error(err)
+      })
+    }
+  </script>
+</body>
+
+</html>

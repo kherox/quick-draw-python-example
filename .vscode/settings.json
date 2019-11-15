@@ -1,0 +1,4 @@
+{
+    "python.linting.pylintEnabled": true,
+    "python.pythonPath": "/home/kherox/anaconda2/envs/tensorflow2/bin/python"
+}

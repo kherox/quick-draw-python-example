@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <style>
+    body{
+    background-color:#b1b1b6;
+    min-height: 100vh;
+}
+nav {
+ position: fixed;
+ left: 30px;
+ bottom: 30px;
+ z-index: 1;
+}
+
+nav a {
+    width: 40px;
+    height: 40px;
+    display: inline-block;
+    margin: 0 10px 0 0;
+    border-radius: 20px;
+}
+  </style>
+  <title>Quick</title>
+</head>
+<body>
+ <canvas style="background-color:#440154"></canvas>
+ <img >
+  <nav>
+    <a href="#" style="background-color:#ff4141;"></a>
+    <a href="#" style="background-color:#fef336;"></a>
+    <a href="#" style="background-color:#2727e6;"></a>
+    <a href="#" style="background-color:#111118;"></a>
+   </nav>
+
+   <script type="text/javascript">
+
+
+const canvas = document.querySelector("canvas");
+
+canvas.width = 280;
+canvas.height = 280;
+let top1 , bottom1;
+
+image = []
+
+const context = canvas.getContext("2d");
+
+context.strokeStyle = "#ff4141";
+context.lineWidth = 10;
+context.lineCap = "round";
+
+let shouldPaint = false
+
+canvas.addEventListener("mouseup",(e)=>{
+	if (shouldPaint){
+		console.log("mousedown", "X : " , e.pageX ,"Y : ", e.pageY)
+     predict()
+    
+	}
+   shouldPaint = false;
+   
+})
+
+canvas.addEventListener("mousedown",(e)=>{
+	console.log(shouldPaint)
+	if (!shouldPaint){
+		
+		top1 = e.pageX
+	}
+    shouldPaint = true ; 
+    console.log("mousedown", "X : " , e.pageX ,"Y : ", e.pageY)
+    context.moveTo(e.pageX , e.pageY);
+    context.beginPath()
+})
+
+
+
+canvas.addEventListener("mousemove",(e) => {
+
+    if (shouldPaint){
+        context.lineTo(e.pageX , e.pageY);
+        context.stroke()
+    }
+
+})
+
+
+canvas.addEventListener("mouseleave",function(e){
+    shouldPaint = false;
+    
+})
+
+
+canvas.addEventListener("dblclick",function(e){
+    //if (shouldPaint){
+    	//	context.moveTo(e.pageX , e.pageY);
+    	//console.log("Top" , top1 , "Biottom" , bottom1)
+    		//predict()
+    	
+
+    //}
+    
+})
+
+
+document.querySelectorAll("nav a").forEach(link => {
+
+    link.addEventListener("click",function(e){
+        context.strokeStyle = this.style.backgroundColor
+    })
+
+})
+
+function predict(){
+
+    var img = document.createElement("img");
+       img.src = canvas.toDataURL("image/png");
+       document.body.append(img);
+       
+
+       // document.querySelector("img"). = context.getImageData(140,140,140,140).data
+        let imagedata = context.getImageData(0,0,280,280).data;
+
+        var nnInput = new Array(784);
+
+       // var imgToDataGray = imageDataToGrayscale(imagedata)
+       // for (var y = 0; y < 28; y++) {
+       //    for (var x = 0; x < 28; x++) {
+       //      var mean = 0;
+       //      for (var v = 0; v < 10; v++) {
+       //        for (var h = 0; h < 10; h++) {
+       //          mean += imgToDataGray[y*10 + v][x*10 + h];
+       //        }
+       //      }
+       //      mean = (1 - mean / 100); // average and invert
+       //      nnInput[x*28+y] = (mean - .5) / .5;
+       //    }
+       //  }
+
+        console.log((imagedata))
+
+        var myHeaders = new Headers({"Content-Type" : 'multipart/form-data'}); //{content_type : 'image/jpeg'} //multipart/form-data
+
+        var formData = new FormData()
+        formData.append("image",imagedata);
+        formData.append("base64",canvas.toDataURL("image/png"));
+        formData.append("height",context.getImageData(0,0,280,280).height);
+        formData.append("width",context.getImageData(0,0,280,280).width);
+
+var myInit = { method: 'POST',  mode: 'cors',cache: 'default', body : formData };
+        fetch("/decode_image",myInit).then(res => {
+          console.log(res)
+        }).catch(err => {
+          console.error(err)
+        })
+}
+
+
+// given grayscale image, find bounding rectangle of digit defined
+      // by above-threshold surrounding
+      function getBoundingRectangle(img, threshold) {
+        var rows = img.length;
+        var columns = img[0].length;
+        var minX=columns;
+        var minY=rows;
+        var maxX=-1;
+        var maxY=-1;
+        for (var y = 0; y < rows; y++) {
+          for (var x = 0; x < columns; x++) {
+            if (img[y][x] < threshold) {
+              if (minX > x) minX = x;
+              if (maxX < x) maxX = x;
+              if (minY > y) minY = y;
+              if (maxY < y) maxY = y;
+            }
+          }
+        }
+        return { minY: minY, minX: minX, maxY: maxY, maxX: maxX};
+      }
+
+      // take canvas image and convert to grayscale. Mainly because my
+      // own functions operate easier on grayscale, but some stuff like
+      // resizing and translating is better done with the canvas functions
+      function imageDataToGrayscale(imgData) {
+        var grayscaleImg = [];
+        for (var y = 0; y < imgData.height; y++) {
+          grayscaleImg[y]=[];
+          for (var x = 0; x < imgData.width; x++) {
+            var offset = y * 4 * imgData.width + 4 * x;
+            var alpha = imgData.data[offset+3];
+            // weird: when painting with stroke, alpha == 0 means white;
+            // alpha > 0 is a grayscale value; in that case I simply take the R value
+            if (alpha == 0) {
+              imgData.data[offset] = 255;
+              imgData.data[offset+1] = 255;
+              imgData.data[offset+2] = 255;
+            }
+            imgData.data[offset+3] = 255;
+            // simply take red channel value. Not correct, but works for
+            // black or white images.
+            grayscaleImg[y][x] = imgData.data[y*4*imgData.width + x*4 + 0] / 255;
+          }
+        }
+        return grayscaleImg;
+      }
+
+       // computes center of mass of digit, for centering
+      // note 1 stands for black (0 white) so we have to invert.
+      function centerImage(img) {
+        var meanX = 0;
+        var meanY = 0;
+        var rows = img.length;
+        var columns = img[0].length;
+        var sumPixels = 0;
+        for (var y = 0; y < rows; y++) {
+          for (var x = 0; x < columns; x++) {
+            var pixel = (1 - img[y][x]);
+            sumPixels += pixel;
+            meanY += y * pixel;
+            meanX += x * pixel;
+          }
+        }
+        meanX /= sumPixels;
+        meanY /= sumPixels;
+        
+        var dY = Math.round(rows/2 - meanY);
+        var dX = Math.round(columns/2 - meanX);
+        return {transX: dX, transY: dY};
+      }
+
+
+
+   </script>
+</body>
+</html>
